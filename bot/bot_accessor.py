@@ -16,9 +16,10 @@ class VKAccessor:
         self.token = application['config']['vk']['token']
         self.group_id = application['config']['vk']['group_id']
 
-        application['bot'] = asyncio.create_task(set_bot(self.token, self.group_id))
+        application['bot'] = asyncio.create_task(set_bot(application))
 
-    async def _on_disconnect(self, application):
+    @staticmethod
+    async def _on_disconnect(application):
         application['bot'].cancel()
         await application['bot']
 

@@ -7,6 +7,9 @@ db = Gino()
 
 class PsqlAccessor:
     def __init__(self):
+        from db.models import User
+
+        self.user = User
         self.db = None
 
     def setup(self, application):
@@ -19,7 +22,7 @@ class PsqlAccessor:
         self.db = db
         application["db"] = self
 
-    async def _on_disconnect(self, _) -> None:
+    async def _on_disconnect(self, _):
         if self.db is not None:
             await self.db.pop_bind().close()
 
