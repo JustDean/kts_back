@@ -15,7 +15,6 @@ class VKAccessor:
     async def _on_connect(self, application):
         self.token = application['config']['vk']['token']
         self.group_id = application['config']['vk']['group_id']
-
         application['bot'] = asyncio.create_task(set_bot(application))
 
     @staticmethod

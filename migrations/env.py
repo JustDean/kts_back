@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from alembic import context
 
 
-from settings.settings import get_config
+from app.settings import get_config
 from db.db_accessor import db
 
 app_config = get_config()

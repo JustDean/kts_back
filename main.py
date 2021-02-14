@@ -1,13 +1,19 @@
 import logging
 from aiohttp import web
+from aiohttp_apispec import setup_aiohttp_apispec
 
-from settings.settings import get_config
+from app.settings import get_config
+from app.routes import get_routes
 from db.db_accessor import db_accessor
 from bot.bot_accessor import vk_bot
 
 
 def set_config(application):
     application['config'] = get_config()
+
+
+def set_routes(application):
+    get_routes(application)
 
 
 def set_db(application):
@@ -18,14 +24,26 @@ def set_bot(application):
     vk_bot.setup(application)
 
 
+def set_swagger(application):
+    setup_aiohttp_apispec(
+        app=application,
+        title="Database documentation",
+        version="v1",
+        url="/swagger.json",
+        swagger_path="/swagger",
+    )
+
+
 def set_logging():
     logging.basicConfig(level=logging.DEBUG)
 
 
 def setup_app(application):
     set_config(application)
+    set_routes(application)
     set_db(application)
     set_bot(application)
+    set_swagger(application)
     set_logging()
 
 

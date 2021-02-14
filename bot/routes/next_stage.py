@@ -1,5 +1,4 @@
 from asyncio import sleep
-
 from vkwave.bots import (DefaultRouter,
                          simple_bot_message_handler,
                          PayloadFilter,
@@ -7,16 +6,18 @@ from vkwave.bots import (DefaultRouter,
 from bot.keyboards.stage_kb import get_stage_kb
 
 
-start_handler = DefaultRouter()
+next_stage_handler = DefaultRouter()
 
 
-@simple_bot_message_handler(start_handler, PayloadFilter({"command": "start"}))
+@simple_bot_message_handler(next_stage_handler, PayloadFilter({"command": "next_stage"}))
 async def handler(event):
-    await event.answer(message=f"Отлично! Поехали, {event['current_user'].first_name}!")
-    await sleep(.5)  # give a second to think
     stage_info = event['stage_info']
+
+    if event['comment']:
+        await event.answer(message=event['comment'])
+        await sleep(.3)
 
     return await event.answer(
         message=stage_info.question,
-        keyboard=get_stage_kb(stage_info, False).get_keyboard(),
+        keyboard=get_stage_kb(stage_info, event['final_stage']).get_keyboard(),
     )

@@ -1,2 +1,4 @@
+.idea
 venv
-settings/config.yaml
+__pycache__
+app/config.yaml

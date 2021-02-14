@@ -1,6 +1,7 @@
 from vkwave.bots import DefaultRouter, simple_bot_message_handler
 
-from bot.keyboard.welcome_kb import WELCOME_KB
+from bot.keyboards.welcome_kb import WELCOME_KB
+
 
 welcome_handler = DefaultRouter()
 
