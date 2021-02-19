@@ -2,7 +2,7 @@ from vkwave.bots import (DefaultRouter,
                          simple_bot_message_handler,
                          PayloadFilter,
                          )
-from bot.keyboards.welcome_kb import WELCOME_KB
+from bot_v1.keyboards.welcome_kb import WELCOME_KB
 
 
 def fin_handle(storage):

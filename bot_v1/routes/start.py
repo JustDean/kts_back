@@ -4,7 +4,7 @@ from vkwave.bots import (DefaultRouter,
                          simple_bot_message_handler,
                          PayloadFilter,
                          )
-from bot.keyboards.stage_kb import get_stage_kb
+from bot_v1.keyboards.stage_kb import get_stage_kb
 
 
 start_handler = DefaultRouter()

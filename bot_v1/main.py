@@ -1,14 +1,14 @@
 from vkwave.bots import SimpleLongPollBot
 
-from bot.middlewares.user_preprocess import UserMiddleware
-from bot.middlewares.session_preprocess import session_check
-from bot.middlewares.answer_preprocessor import answer_check
+from bot_v1.middlewares.user_preprocess import UserMiddleware
+from bot_v1.middlewares.session_preprocess import session_check
+from bot_v1.middlewares.answer_preprocessor import answer_check
 
-from bot.routes.welcome import welcome_handler
-from bot.routes.help import help_handler
-from bot.routes.start import start_handler
-from bot.routes.next_stage import next_stage_handler
-from bot.routes.finita import fin_handle
+from bot_v1.routes.welcome import welcome_handler
+from bot_v1.routes.help import help_handler
+from bot_v1.routes.start import start_handler
+from bot_v1.routes.next_stage import next_stage_handler
+from bot_v1.routes.finita import fin_handle
 
 
 storage = dict()    # aka cache

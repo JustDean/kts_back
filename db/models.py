@@ -15,7 +15,17 @@ class Quiz(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.String)
+    # Category = db.Column(db.String)
+    # points = db.Column(df.Integer)
+
     answer_1 = db.Column(db.String)
     answer_2 = db.Column(db.String)
     answer_3 = db.Column(db.String)
     correct_answer = db.Column(db.String)
+
+# class Session(db.Model):
+#     __tablename__ = "sessions"
+#
+#     id = db.Column(db.Integer, primary_key=True)
+#     group_id
+#

@@ -5,7 +5,7 @@ from aiohttp_apispec import setup_aiohttp_apispec
 from app.settings import get_config
 from app.routes import get_routes
 from db.db_accessor import db_accessor
-from bot.bot_accessor import vk_bot
+from bot_v2.bot_accessor import vk_bot
 
 
 def set_config(application):

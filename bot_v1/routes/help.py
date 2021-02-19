@@ -3,6 +3,7 @@ from vkwave.bots import (DefaultRouter,
                          PayloadFilter,
                          )
 
+
 help_handler = DefaultRouter()
 
 

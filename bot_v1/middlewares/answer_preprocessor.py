@@ -26,4 +26,11 @@ def answer_check(storage):
             finally:
                 return MiddlewareResult(True)
 
+        async def post_process_event(self, event):
+            try:
+                if event.object.object.message.text:
+                    event['late'].cancel()
+            except AttributeError:
+                pass
+
     return AnswerMiddleware()

@@ -1,0 +1,6 @@
+BotEvent(bot_type=BotType.BOT, object=type='message_new' group_id=202343491
+object=MessageNewObject(
+message=MessagesMessage(
+action=MessagesMessageAction(conversation_message_id=None, email=None, member_id=-202343491, message=None, photo=None,
+text=None, type=<MessagesMessageActionStatus.CHAT_INVITE_USER: 'chat_invite_user'>),
+admin_author_id=None, attachments=[], conversation_message_id=790, date=1613467768, deleted=None, from_id=31895428, fwd_messages=[], geo=None, id=0, important=False, is_hidden=False, is_cropped=None, keyboard=None, members_count=None, out=<BaseBoolInt.NO: 0>, payload=None, peer_id=2000000001, random_id=0, ref=None, ref_source=None, reply_message=None, text='', update_time=None, was_listened=None, pinned_at=None), client_info=ClientInfo(button_actions=['text', 'vkpay', 'open_app', 'location', 'open_link', 'intent_subscribe', 'intent_unsubscribe'], keyboard=True, inline_keyboard=True, carousel=False, lang_id=0)) event_id='6720c8934e559a08f83112f512bad6578d88580f', api_ctx=<vkwave.api.methods._abc.APIOptionsRequestContext object at 0x7f00edef5460>)
