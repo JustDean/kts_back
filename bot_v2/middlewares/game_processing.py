@@ -1,3 +1,4 @@
+from time import time
 from vkwave.bots import BaseMiddleware, MiddlewareResult
 
 
@@ -12,7 +13,8 @@ def process_game(storage):
                 ################### process only if the game is on ##########################
                 if event['payload'] == '{"command":"game_menu"}' or \
                         event['payload'] == '{"command":"next_round"}' or \
-                        event['payload'] == '{"command":"answer"}':
+                        event['payload'] == '{"command":"answer"}' or \
+                        event['payload'] == '{"command":"time_up"}':
                     performer = event.object.object.message.from_id
 
                     # showing results do not require authorization
@@ -38,15 +40,21 @@ def process_game(storage):
                             if answer == correct_answer:
                                 ###### last round
                                 if n_round == len(storage['quiz']) - 1:
+                                    timer = time()
+                                    await storage[event['conversation_id']]['timer'].put('timer', timer)
+
                                     storage[event['conversation_id']]['participants'][performer] += 1
                                     storage[event['conversation_id']]['chooser'] = None
                                     storage[event['conversation_id']]['caller'] = None
                                     event['results'] = True
-                                    storage[event['conversation_id']]['history'].append(storage[event['conversation_id']]['participants'])
+                                    storage[event['conversation_id']]['history'] = storage[event['conversation_id']]['participants']
                                     event.object.object.message.payload = '{"command":"menu"}'
 
                                     return MiddlewareResult(True)
                                 else:
+                                    timer = time()
+                                    await storage[event['conversation_id']]['timer'].put('timer', timer)
+
                                     storage[event['conversation_id']]['participants'][performer] += 1
                                     storage[event['conversation_id']]['chooser'] = performer
                                     storage[event['conversation_id']]['caller'] = None  # release caller
@@ -90,6 +98,39 @@ def process_game(storage):
 
                         else:
                             raise TurnError
+                    ################### "command":"time_up" #########################
+                    elif event['payload'] == '{"command":"time_up"}':
+                        event.object.object.message.payload = '{"command":"game_menu"}'
+                        event['payload'] = '{"command":"game_menu"}'
+                        n_round = storage[event['conversation_id']]['round']
+
+                        ####### last round
+                        if n_round == len(storage['quiz']) - 1:
+                            timer = time()
+                            await storage[event['conversation_id']]['timer'].put('timer', timer)
+
+                            storage[event['conversation_id']]['caller'] = None
+                            event['results'] = True
+                            storage[event['conversation_id']]['history'] = storage[event['conversation_id']][
+                                'participants']
+                            event.object.object.message.payload = '{"command":"menu"}'
+
+                            return MiddlewareResult(True)
+
+                        else:
+                            timer = time()
+                            await storage[event['conversation_id']]['timer'].put('timer', timer)
+
+                            storage[event['conversation_id']]['caller'] = None  # release caller
+                            storage[event['conversation_id']]['round'] += 1  # next round
+
+                            if n_round == len(storage['quiz']) - 1:  # upcoming last round
+                                event['last_round'] = True
+                            else:
+                                event['good_call'] = True
+
+                        return MiddlewareResult(True)
+
                 ############################# not caller wrote a message ################################
                     else:
                         raise TurnError

@@ -15,7 +15,7 @@ def get_menu(storage):
             message = f'Произошла ошибка.\n{event["error"]}'
 
         elif event['results']:
-            last_match = storage[event['conversation_id']]['history'][-1]
+            last_match = storage[event['conversation_id']]['history']
             res = dict()
             for user in last_match:
                 name = await event.api_ctx.users.get(user_ids=user)

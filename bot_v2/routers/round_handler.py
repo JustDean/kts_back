@@ -1,8 +1,13 @@
+import asyncio
+from time import time
 from vkwave.bots import (DefaultRouter,
                          simple_bot_message_handler,
                          PayloadFilter,
                          )
+from vkwave.bots.storage.types import Key
+
 from bot_v2.keyboards.round_kb import ROUND_KB
+from bot_v2.keyboards.time_up import TIME
 
 
 def next_round(storage):
@@ -19,9 +24,21 @@ def next_round(storage):
                 keyboard=ROUND_KB.get_keyboard()
             )
         else:
-            return await event.answer(
+            my_key = Key("timer")
+            timer = time()
+            await storage[event['conversation_id']]['timer'].put(my_key, timer)
+
+            await event.answer(
                 message=f"{question}",
                 keyboard=ROUND_KB.get_keyboard()
                 )
+
+            await asyncio.sleep(10)
+            get_timer = await storage[event['conversation_id']]['timer'].get("timer")
+            if get_timer == timer:
+                return await event.answer(message='Время вышло!',
+                                          keyboard=TIME.get_keyboard())
+            else:
+                return None
 
     return help_handler

@@ -25,7 +25,7 @@ def set_routing(storage):
 
                 ######################### end game ############################
                 elif event['user_text'] == f"[club{event['group_id']}|@club{event['group_id']}] Закончить!":
-                    storage[event['conversation_id']]['history'].append(storage[event['conversation_id']]['participants'])  # adding game results in a history
+                    storage[event['conversation_id']]['history'] = storage[event['conversation_id']]['participants']  # adding game results in a history
                     storage[event['conversation_id']]['round'] = 0
                     storage[event['conversation_id']]['caller'] = None
                     storage[event['conversation_id']]['chooser'] = None

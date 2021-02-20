@@ -38,7 +38,7 @@ def game_menu(storage):
         elif event['good_call']:
 
             return await event.answer(
-                message=f"Все верно!\nРаунд: {storage[event['conversation_id']]['round'] + 1}.\nНачинай, {chooser}",
+                message=f"Хорошо, идем дальше!\nРаунд: {storage[event['conversation_id']]['round'] + 1}.\nНачинай, {chooser}",
                 keyboard=GAME_MENU_KB.get_keyboard()
             )
 

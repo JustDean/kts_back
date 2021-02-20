@@ -15,7 +15,7 @@ async def handler(event):
         message=
         """
         Это своя игра.
-        ОБЪЯСНИТЬ ПРАВИЛА
+        
         """,
         keyboard=AGREED_KB.get_keyboard()
         )

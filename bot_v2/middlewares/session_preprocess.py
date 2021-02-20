@@ -1,4 +1,5 @@
 from vkwave.bots import BaseMiddleware, MiddlewareResult
+from vkwave.bots.storage.storages import Storage
 
 from db.models import Quiz
 
@@ -37,7 +38,8 @@ def session_check(storage):
                                                          "round": 0,
                                                          "caller": None,
                                                          "chooser": None,
-                                                         "history": []}
+                                                         "history": None,
+                                                         "timer": Storage()}
                     current_store = storage[event['conversation_id']]
 
                     users = [user for user in fetch_users.response.profiles]
