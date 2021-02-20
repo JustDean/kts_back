@@ -1,3 +1,4 @@
+import operator
 from vkwave.bots import (DefaultRouter,
                          simple_bot_message_handler,
                          PayloadFilter
@@ -20,7 +21,8 @@ def get_menu(storage):
             for user in last_match:
                 name = await event.api_ctx.users.get(user_ids=user)
                 res[name.response[0].last_name] = last_match[user]
-            message = f"Финальный счет участников:\n{res}"
+            winner = max(res.items(), key=operator.itemgetter(1))[0]
+            message = f"Победитель {winner}.\nФинальный счет участников:\n{res}"
 
         elif event['user_text'] == "":
             message = """Добро пожаловать в свою игру!
