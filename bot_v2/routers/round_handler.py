@@ -33,7 +33,7 @@ def next_round(storage):
                 keyboard=ROUND_KB.get_keyboard()
                 )
 
-            await asyncio.sleep(10)
+            await asyncio.sleep(60)
             get_timer = await storage[event['conversation_id']]['timer'].get("timer")
             if get_timer == timer:
                 return await event.answer(message='Время вышло!',

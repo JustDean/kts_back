@@ -1,6 +1,6 @@
 from vkwave.bots import BaseMiddleware, MiddlewareResult
 
-from db.models import User
+from app.models import User
 
 
 class UserMiddleware(BaseMiddleware):

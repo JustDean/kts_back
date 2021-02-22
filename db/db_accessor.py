@@ -7,10 +7,10 @@ db = Gino()
 
 class PsqlAccessor:
     def __init__(self):
-        from db.models import User, Quiz
+        from app.models import Quiz, Session
 
-        self.user = User
         self.quiz = Quiz
+        self.sessions = Session
         self.db = None
 
     def setup(self, application):

@@ -1,5 +1,8 @@
 from time import time
+import json
 from vkwave.bots import BaseMiddleware, MiddlewareResult
+
+from app.models import Session
 
 
 class TurnError(Exception):
@@ -34,7 +37,7 @@ def process_game(storage):
                         elif storage[event['conversation_id']]['caller'] == performer:
                             n_round = storage[event['conversation_id']]['round']
                             answer = event['user_text'].replace('[club202343491|bot]', '').lower()
-                            correct_answer = storage['quiz'][n_round].correct_answer.lower()
+                            correct_answer = storage['quiz'][n_round].answer.lower()
 
                             ######### correct
                             if answer == correct_answer:
@@ -43,11 +46,21 @@ def process_game(storage):
                                     timer = time()
                                     await storage[event['conversation_id']]['timer'].put('timer', timer)
 
-                                    storage[event['conversation_id']]['participants'][performer] += 1
+                                    storage[event['conversation_id']]['participants'][performer] += \
+                                        event['quiz'][n_round]['points']
                                     storage[event['conversation_id']]['chooser'] = None
                                     storage[event['conversation_id']]['caller'] = None
                                     event['results'] = True
                                     storage[event['conversation_id']]['history'] = storage[event['conversation_id']]['participants']
+
+                                    #push to database
+                                    session = await Session.query. \
+                                        where(Session.conversation_id == event['conversation_id']) \
+                                        .gino.first()
+
+                                    await session.update(history=json.dumps(storage[event['conversation_id']['history']]),
+                                                         status='finished').apply()
+
                                     event.object.object.message.payload = '{"command":"menu"}'
 
                                     return MiddlewareResult(True)
@@ -55,7 +68,8 @@ def process_game(storage):
                                     timer = time()
                                     await storage[event['conversation_id']]['timer'].put('timer', timer)
 
-                                    storage[event['conversation_id']]['participants'][performer] += 1
+                                    storage[event['conversation_id']]['participants'][performer] += \
+                                        storage['quiz'][n_round].points
                                     storage[event['conversation_id']]['chooser'] = performer
                                     storage[event['conversation_id']]['caller'] = None  # release caller
                                     storage[event['conversation_id']]['round'] += 1     # next round
@@ -70,6 +84,8 @@ def process_game(storage):
                             else:
                                 event['wrong'] = True
                                 storage[event['conversation_id']]['caller'] = None  # release caller
+                                storage[event['conversation_id']]['participants'][performer] -= \
+                                    storage['quiz'][n_round].points
                                 event.object.object.message.payload = '{"command":"next_round"}'    # get back to the question page
 
                                 return MiddlewareResult(True)

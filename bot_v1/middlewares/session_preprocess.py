@@ -1,6 +1,6 @@
 from vkwave.bots import BaseMiddleware, MiddlewareResult
 
-from db.models import Quiz
+from app.models import Quiz
 
 
 def session_check(storage):

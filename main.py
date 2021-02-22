@@ -27,7 +27,7 @@ def set_bot(application):
 def set_swagger(application):
     setup_aiohttp_apispec(
         app=application,
-        title="Database documentation",
+        title="VK-bot documentation",
         version="v1",
         url="/swagger.json",
         swagger_path="/swagger",

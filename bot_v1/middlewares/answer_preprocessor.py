@@ -1,7 +1,5 @@
 from vkwave.bots import BaseMiddleware, MiddlewareResult
 
-from db.models import Quiz
-
 
 def answer_check(storage):
     class AnswerMiddleware(BaseMiddleware):
