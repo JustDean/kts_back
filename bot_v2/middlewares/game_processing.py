@@ -51,7 +51,8 @@ def process_game(storage):
                                     storage[event['conversation_id']]['chooser'] = None
                                     storage[event['conversation_id']]['caller'] = None
                                     event['results'] = True
-                                    storage[event['conversation_id']]['history'] = storage[event['conversation_id']]['participants']
+                                    storage[event['conversation_id']]['history'] = \
+                                        storage[event['conversation_id']]['participants']
 
                                     #push to database
                                     session = await Session.query. \

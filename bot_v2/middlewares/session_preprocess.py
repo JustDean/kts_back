@@ -17,7 +17,6 @@ def session_check(storage):
                 event['good_call'] = False
                 event['last_round'] = False
 
-
                 # creating shortcuts
                 event['user_text'] = event.object.object.message.text
                 event['conversation_id'] = event.object.object.message.peer_id
@@ -67,8 +66,8 @@ def session_check(storage):
                         await session.create()
                     ########## played before
                     else:
-                        session = await Session.query.where(Session.conversation_id == event['conversation_id']). \
-                            gino.first()
+                        session = await Session.query.where(Session.conversation_id == event['conversation_id'])\
+                            .gino.first()
 
                         await session.update(conversation_id=event['conversation_id'],
                                              players_score=players_json,

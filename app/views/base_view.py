@@ -1,5 +1,6 @@
-from aiohttp import web
+import aiohttp_jinja2
 
 
-def index(_):
-    return web.Response(text="Hello, world")
+@aiohttp_jinja2.template("index.html")
+async def index(_):
+    return {}
