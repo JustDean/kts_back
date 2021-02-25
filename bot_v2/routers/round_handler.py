@@ -16,7 +16,8 @@ def next_round(storage):
     @simple_bot_message_handler(help_handler, PayloadFilter({"command": "next_round"}))
     async def handler(event):
         n_round = storage[event['conversation_id']]['round']
-        question = storage['quiz'][n_round].question
+        question = storage[event['conversation_id']]['quiz'][n_round].question
+        answer = storage[event['conversation_id']]['quiz'][n_round].answer
 
         if event['wrong']:
             return await event.answer(
@@ -36,7 +37,7 @@ def next_round(storage):
             await asyncio.sleep(60)
             get_timer = await storage[event['conversation_id']]['timer'].get("timer")
             if get_timer == timer:
-                return await event.answer(message='Время вышло!',
+                return await event.answer(message=f'Время вышло!\n Правильный ответ {answer}',
                                           keyboard=TIME.get_keyboard())
             else:
                 return None

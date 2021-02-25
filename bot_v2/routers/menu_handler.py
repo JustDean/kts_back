@@ -1,5 +1,5 @@
 import operator
-import json
+from json import loads
 from vkwave.bots import (DefaultRouter,
                          simple_bot_message_handler,
                          PayloadFilter
@@ -7,47 +7,42 @@ from vkwave.bots import (DefaultRouter,
 
 from bot_v2.keyboards.menu_kb import MENU_KB
 
-from app.models import Session
+menu_handler = DefaultRouter()
 
 
-def get_menu(storage):
-    welcome_handler = DefaultRouter()
+@simple_bot_message_handler(menu_handler, PayloadFilter({"command": "menu"}))
+async def handler(event):
+    if event['error']:
+        message = f'Произошла ошибка.\n{event["error"]}'
 
-    @simple_bot_message_handler(welcome_handler, PayloadFilter({"command": "menu"}))
-    async def handler(event):
-        if event['error']:
-            message = f'Произошла ошибка.\n{event["error"]}'
+    elif event['results']:
+        last_match = loads(event['results'].players_score)
 
-        elif event['results']:
-            if event['results'] == 'Special':
-                last_match = await Session.query.where(Session.conversation_id == event['conversation_id']).gino.first()
-                last_match = json.loads(last_match.players_score)
+        res = dict()
+        for user in last_match.keys():
+            name = await event.api_ctx.users.get(user_ids=user)
+            res[name.response[0].last_name] = last_match[user]
 
-                res = dict()
-                for user in last_match.keys():
-                    name = await event.api_ctx.users.get(user_ids=user)
-                    res[name.response[0].last_name] = last_match[user]
-            else:
-                last_match = storage[event['conversation_id']]['history']
+        winner = max(res.items(), key=operator.itemgetter(1))[0]
+        message = f"Победитель {winner}.\nФинальный счет участников:\n{res}"
 
-                res = dict()
-                for user in last_match:
-                    name = await event.api_ctx.users.get(user_ids=user)
-                    res[name.response[0].last_name] = last_match[user]
+    elif event['help']:
+        message = """
+        Это своя игра.
+        Я буду задавать вопросы по теме "география", а ты попытайся отвечать на них.
+        На ответ дается одна минут (1 мин.).
+        Если знаешь ответ, нажимай кнопку \"Ответить\" и пиши ответ.
+        Ответ должен быть написан правильно, иначе он не защитается. Регистр (большие или маленькие буквы) не важен.
+        Пожалуй, все. Удачи!
+        """
 
-            winner = max(res.items(), key=operator.itemgetter(1))[0]
-            message = f"Победитель {winner}.\nФинальный счет участников:\n{res}"
+    elif event['user_text'] == "":
+        message = """Добро пожаловать в свою игру!
+                     Выдайте боту права администратора в меню беседы и ознакомтесь с инструкцией."""
 
-        elif event['user_text'] == "":
-            message = """Добро пожаловать в свою игру!
-                         Выдайте боту права администратора в меню беседы и ознакомтесь с инструкцией."""
+    else:
+        message = "С возвращением!"
 
-        else:
-            message = "С возвращением!"
-
-        return await event.answer(message=message,
-                                  keyboard=MENU_KB.get_keyboard()
-                                  )
-
-    return welcome_handler
-
+    return await event.answer(message=message,
+                              keyboard=MENU_KB.get_keyboard()
+                              )

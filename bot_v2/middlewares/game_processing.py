@@ -1,160 +1,196 @@
 from time import time
-import json
+from json import dumps
 from vkwave.bots import BaseMiddleware, MiddlewareResult
 
 from app.models import Session
+
+from bot_v2.consts.payload_consts import (GAME_MENU,
+                                          MENU,
+                                          ROUND,
+                                          ANSWER,
+                                          TIME,
+                                          )
 
 
 class TurnError(Exception):
     pass
 
 
-def process_game(storage):
-    class Game(BaseMiddleware):
-        async def pre_process_event(self, event):
-            try:
-                ################### process only if the game is on ##########################
-                if event['payload'] == '{"command":"game_menu"}' or \
-                        event['payload'] == '{"command":"next_round"}' or \
-                        event['payload'] == '{"command":"answer"}' or \
-                        event['payload'] == '{"command":"time_up"}':
-                    performer = event.object.object.message.from_id
+class Game(BaseMiddleware):
+    def __init__(self):
+        from bot_v2.main import storage
+        self.storage = storage
 
-                    # showing results do not require authorization
-                    if event['results']:
+    async def pre_process_event(self, event):
+        try:
+            # process only if the game is on
+            if event['payload'] == GAME_MENU or \
+                    event['payload'] == ROUND or \
+                    event['payload'] == ANSWER or \
+                    event['payload'] == TIME:
+
+                performer = event.object.object.message.from_id
+                
+                # showing results do not require authorization. So we pass it through
+                if event['results']:
+                    return MiddlewareResult(True)
+
+                # GAME_MENU command
+                if event['payload'] == GAME_MENU:
+                    # game starting
+                    if self.storage[event['conversation_id']]['chooser'] is None:
+                        self.storage[event['conversation_id']]['chooser'] = performer
+
                         return MiddlewareResult(True)
 
-                    ###################### "command":"game_menu" ######################################
-                    if event['payload'] == '{"command":"game_menu"}':
-                        ####### first entrance
-                        if storage[event['conversation_id']]['chooser'] is None:
-                            storage[event['conversation_id']]['chooser'] = performer
+                    # an answer was given
+                    # by caller
+                    elif self.storage[event['conversation_id']]['caller'] == performer:
+                        n_round = self.storage[event['conversation_id']]['round']
+                        answer = event['user_text'].lower()
+                        correct_answer = self.storage[event['conversation_id']]['quiz'][n_round].answer.lower()
+                        performer = event.object.object.message.from_id
 
-                            return MiddlewareResult(True)
+                        # correct answer
+                        if answer == correct_answer:
+                            # final round
+                            if n_round == len(self.storage[event['conversation_id']]['quiz']) - 1:
+                                timer = time()
+                                await self.storage[event['conversation_id']]['timer'].put('timer', timer)
 
-                        #################### answer was given ############################
-                        ####### by caller
-                        elif storage[event['conversation_id']]['caller'] == performer:
-                            n_round = storage[event['conversation_id']]['round']
-                            answer = event['user_text'].replace('[club202343491|bot]', '').lower()
-                            correct_answer = storage['quiz'][n_round].answer.lower()
+                                self.storage[event['conversation_id']]['participants'][performer] += \
+                                    self.storage[event['conversation_id']]['quiz'][n_round].points  # player scored
+                                self.storage[event['conversation_id']]['chooser'] = None  # release all
+                                self.storage[event['conversation_id']]['caller'] = None
 
-                            ######### correct
-                            if answer == correct_answer:
-                                ###### last round
-                                if n_round == len(storage['quiz']) - 1:
-                                    timer = time()
-                                    await storage[event['conversation_id']]['timer'].put('timer', timer)
+                                res = dumps(self.storage[event['conversation_id']]['participants'])  # get result
 
-                                    storage[event['conversation_id']]['participants'][performer] += \
-                                        event['quiz'][n_round]['points']
-                                    storage[event['conversation_id']]['chooser'] = None
-                                    storage[event['conversation_id']]['caller'] = None
-                                    event['results'] = True
-                                    storage[event['conversation_id']]['history'] = \
-                                        storage[event['conversation_id']]['participants']
+                                # push to database
+                                session = await Session.query. \
+                                    where(Session.conversation_id == event['conversation_id']) \
+                                    .gino.first()
 
-                                    #push to database
-                                    session = await Session.query. \
-                                        where(Session.conversation_id == event['conversation_id']) \
-                                        .gino.first()
+                                await session.update(players_score=res,
+                                                     status='finished').apply()
 
-                                    await session.update(history=json.dumps(storage[event['conversation_id']['history']]),
-                                                         status='finished').apply()
+                                del (self.storage[event['conversation_id']])    # delete from cash
 
-                                    event.object.object.message.payload = '{"command":"menu"}'
+                                conversation_id = event['conversation_id']
+                                event['results'] = await Session.query. \
+                                    where(Session.conversation_id == conversation_id).gino.first()
+                                event.object.object.message.payload = MENU  # redirecting
+                                event['payload'] = MENU
 
-                                    return MiddlewareResult(True)
+                            # any other rounds
+                            else:
+                                timer = time()
+                                await self.storage[event['conversation_id']]['timer'].put('timer',
+                                                                                          timer)  # release timer
+
+                                self.storage[event['conversation_id']]['participants'][performer] += \
+                                    self.storage[event['conversation_id']]['quiz'][n_round].points
+                                self.storage[event['conversation_id']]['chooser'] = performer
+                                self.storage[event['conversation_id']]['caller'] = None  # release caller
+                                self.storage[event['conversation_id']]['round'] += 1  # next round
+
+                                if n_round == len(
+                                        self.storage[event['conversation_id']]['quiz']) - 1:  # upcoming last round
+                                    event['last_round'] = True
                                 else:
-                                    timer = time()
-                                    await storage[event['conversation_id']]['timer'].put('timer', timer)
-
-                                    storage[event['conversation_id']]['participants'][performer] += \
-                                        storage['quiz'][n_round].points
-                                    storage[event['conversation_id']]['chooser'] = performer
-                                    storage[event['conversation_id']]['caller'] = None  # release caller
-                                    storage[event['conversation_id']]['round'] += 1     # next round
-
-                                    if n_round == len(storage['quiz']) - 1:     # upcoming last round
-                                        event['last_round'] = True
-                                    else:
-                                        event['good_call'] = True
-
-                                return MiddlewareResult(True)
-                            ############# wrong
-                            else:
-                                event['wrong'] = True
-                                storage[event['conversation_id']]['caller'] = None  # release caller
-                                storage[event['conversation_id']]['participants'][performer] -= \
-                                    storage['quiz'][n_round].points
-                                event.object.object.message.payload = '{"command":"next_round"}'    # get back to the question page
-
-                                return MiddlewareResult(True)
-                        ####### not by caller
-                        else:
-                            raise TurnError
-                    ##################### "command":"next_round" #################################
-                    elif event['payload'] == '{"command":"next_round"}':
-
-                        ####################### chooser called ############################
-                        if performer == storage[event['conversation_id']]['chooser']:
-                            return MiddlewareResult(True)
-
-                        ####################### not chooser called ############################
-                        else:
-                            event['turn_violation'] = True
-                            event.object.object.message.payload = '{"command":"game_menu"}'
-                            return MiddlewareResult(True)
-
-                    ##################### "command":"answer" #################################
-                    elif event['payload'] == '{"command":"answer"}':
-                        if storage[event['conversation_id']]['caller'] is None:
-                            storage[event['conversation_id']]['caller'] = performer
+                                    event['good_call'] = True
 
                             return MiddlewareResult(True)
-
+                        # wrong answer
                         else:
-                            raise TurnError
-                    ################### "command":"time_up" #########################
-                    elif event['payload'] == '{"command":"time_up"}':
-                        event.object.object.message.payload = '{"command":"game_menu"}'
-                        event['payload'] = '{"command":"game_menu"}'
-                        n_round = storage[event['conversation_id']]['round']
-
-                        ####### last round
-                        if n_round == len(storage['quiz']) - 1:
-                            timer = time()
-                            await storage[event['conversation_id']]['timer'].put('timer', timer)
-
-                            storage[event['conversation_id']]['caller'] = None
-                            event['results'] = True
-                            storage[event['conversation_id']]['history'] = storage[event['conversation_id']][
-                                'participants']
-                            event.object.object.message.payload = '{"command":"menu"}'
+                            event['wrong'] = True
+                            self.storage[event['conversation_id']]['caller'] = None  # release caller
+                            self.storage[event['conversation_id']]['participants'][performer] -= \
+                                self.storage[event['conversation_id']]['quiz'][n_round].points  # reduce points
+                            event.object.object.message.payload = ROUND    # get back to the question page
+                            event['payload'] = ROUND
 
                             return MiddlewareResult(True)
-
-                        else:
-                            timer = time()
-                            await storage[event['conversation_id']]['timer'].put('timer', timer)
-
-                            storage[event['conversation_id']]['caller'] = None  # release caller
-                            storage[event['conversation_id']]['round'] += 1  # next round
-
-                            if n_round == len(storage['quiz']) - 1:  # upcoming last round
-                                event['last_round'] = True
-                            else:
-                                event['good_call'] = True
-
-                        return MiddlewareResult(True)
-
-                ############################# not caller wrote a message ################################
+                    # not by caller (out of turn)
                     else:
                         raise TurnError
-                ########################## if not a game - ignore #############################
-                else:
-                    return MiddlewareResult(True)
-            except TurnError:
-                return MiddlewareResult(False)
+                # next round
+                elif event['payload'] == ROUND:
 
-    return Game()
+                    # chooser called
+                    if performer == self.storage[event['conversation_id']]['chooser']:
+                        return MiddlewareResult(True)
+
+                    # not a chooser called
+                    else:
+                        event['turn_violation'] = True
+                        event.object.object.message.payload = MENU
+                        event['payload'] = MENU
+
+                        return MiddlewareResult(True)
+
+                # answer
+                elif event['payload'] == ANSWER:
+                    # set caller if there is no one
+                    if self.storage[event['conversation_id']]['caller'] is None:
+                        self.storage[event['conversation_id']]['caller'] = performer
+
+                        return MiddlewareResult(True)
+
+                    else:
+                        raise TurnError
+                # time up
+                elif event['payload'] == TIME:
+                    n_round = self.storage[event['conversation_id']]['round']   # round stays the same
+
+                    # final round
+                    if n_round == len(self.storage[event['conversation_id']]['quiz']) - 1:
+                        timer = time()
+                        await self.storage[event['conversation_id']]['timer'].put('timer', timer)
+
+                        self.storage[event['conversation_id']]['chooser'] = None  # release all
+                        self.storage[event['conversation_id']]['caller'] = None
+
+                        res = dumps(self.storage[event['conversation_id']]['participants'])  # get result
+
+                        # push to database
+                        session = await Session.query. \
+                            where(Session.conversation_id == event['conversation_id']) \
+                            .gino.first()
+
+                        await session.update(players_score=res,
+                                             status='finished').apply()
+
+                        del (self.storage[event['conversation_id']])  # delete from cash
+
+                        conversation_id = event['conversation_id']
+                        event['results'] = await Session.query.\
+                            where(Session.conversation_id == conversation_id).gino.first()
+                        event.object.object.message.payload = MENU  # redirecting
+                        event['payload'] = MENU
+
+                    # any other rounds
+                    else:
+                        timer = time()
+                        await self.storage[event['conversation_id']]['timer'].put('timer', timer)  # release timer
+
+                        self.storage[event['conversation_id']]['caller'] = None
+                        self.storage[event['conversation_id']]['round'] += 1
+
+                        if n_round == len(
+                                self.storage[event['conversation_id']]['quiz']) - 1:  # upcoming last round
+                            event['last_round'] = True
+
+                        event.object.object.message.payload = GAME_MENU
+                        event['payload'] = GAME_MENU  # redirecting
+
+                    return MiddlewareResult(True)
+
+            # not a caller wrote a message
+                else:
+                    raise TurnError
+            # if not part of a game - just ignore
+            else:
+                return MiddlewareResult(True)
+
+        except TurnError:
+            return MiddlewareResult(False)

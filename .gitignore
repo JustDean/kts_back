@@ -1,5 +1,6 @@
 .idea
 venv
 __pycache__
+bot_v1/
 app/config.yaml
-bot_v1
+test/.pytest_cache

@@ -46,18 +46,35 @@ def set_logging():
     logging.basicConfig(level=logging.DEBUG)
 
 
-def setup_app(application):
-    set_config(application)
-    set_routes(application)
-    set_db(application)
-    set_bot(application)
-    set_jinja(application)
-    set_swagger(application)
+def setup_app():
+    app = web.Application()
+
+    set_config(app)
+    set_routes(app)
+    set_db(app)
+    set_bot(app)
+    set_jinja(app)
+    set_swagger(app)
     set_logging()
 
+    return app
 
-app = web.Application()
+
+# for testing admin api
+def set_testing():
+    app = web.Application()
+
+    set_config(app)
+    set_routes(app)
+    set_db(app)
+    # set_bot(app)      # causes an error in ShutDown
+    set_jinja(app)
+    set_swagger(app)
+    set_logging()
+
+    return app
+
 
 if __name__ == '__main__':
-    setup_app(app)
+    app = setup_app()
     web.run_app(app, port=app['config']['base']['port'])

@@ -6,4 +6,4 @@ MENU_KB.add_text_button(text="Начать", payload={"command": "game_menu"}, c
 MENU_KB.add_row()
 MENU_KB.add_text_button(text="Инструкция", payload={"command": "help"}, color=ButtonColor.PRIMARY)
 MENU_KB.add_row()
-MENU_KB.add_text_button(text="Прошлая игра!", payload={"command": "menu"}, color=ButtonColor.SECONDARY)
+MENU_KB.add_text_button(text="Прошлая игра", payload={"command": "previous_game"}, color=ButtonColor.SECONDARY)

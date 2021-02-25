@@ -4,63 +4,77 @@ from vkwave.bots import BaseMiddleware, MiddlewareResult
 
 from app.models import Session
 
+from bot_v2.consts.payload_consts import (MENU,
+                                          HELP,
+                                          GAME_MENU,
+                                          RESULTS,
+                                          PREV_GAME,
+                                          END,
+                                          TIME)
 
-def set_routing(storage):
-    class RoutingMiddleware(BaseMiddleware):
-        async def pre_process_event(self, event):
-            try:
-                ################# SET ROUTES FOR MENU #######################
-                if (event['user_text'] == "") or \
-                        (event['user_text'] == f"[club{event['group_id']}|@club{event['group_id']}] Понял!"):
-                    event.object.object.message.payload = '{"command":"menu"}'
-                    event['payload'] = '{"command":"menu"}'
 
-                ######################### results from main menu ############################
-                elif event['user_text'] == f"[club{event['group_id']}|@club{event['group_id']}] Прошлая игра!":
+class RoutingMiddleware(BaseMiddleware):
+    def __init__(self):
+        from bot_v2.main import storage
+        self.storage = storage
 
-                    if event['conversation_id'] in storage['history']:
-                        history = await Session.query.where(Session.conversation_id == event['conversation_id']). \
-                            gino.first()
-                        if history.players_score == {}:
-                            event['error'] = "У вас еще не было игр!"
-                        else:
-                            event['results'] = 'Special'
+    async def pre_process_event(self, event):
+        try:
+            # first entrance
+            if event['user_text'] == "":
+                event.object.object.message.payload = MENU
+                event['payload'] = MENU
 
-                    elif event['conversation_id'] not in storage.keys():
-                        event['error'] = "У вас еще не было игр!"
+            # help
+            elif event['payload'] == HELP:
+                event['help'] = True
+                event.object.object.message.payload = MENU
+                event['payload'] = MENU
 
-                    else:
-                        event['results'] = True
+            # previous game
+            elif event['payload'] == PREV_GAME:
+                conversation_id = event['conversation_id']
+                prev_game = await Session.query.where(Session.conversation_id == conversation_id).gino.first()
 
-                ######################### results from game menu ############################
-                elif event['user_text'] == f"[club{event['group_id']}|@club{event['group_id']}] Результаты!":
-                    event['results'] = True
+                if prev_game is None:
+                    event['error'] = "У вас еще не было игр!"
+                else:
+                    event['results'] = prev_game
 
-                ######################### end game #####################################
-                elif event['user_text'] == f"[club{event['group_id']}|@club{event['group_id']}] Закончить!":
-                    session = await Session.query.where(Session.conversation_id == event['conversation_id']). \
-                        gino.first()
+                event.object.object.message.payload = MENU  # redirecting
+                event['payload'] = MENU
 
-                    history = json.dumps(storage[event['conversation_id']]['participants'])
-                    await session.update(conversation_id=event['conversation_id'],
-                                         players_score=history,
-                                         status='finished').apply()
+            # results from game menu
+            elif event['payload'] == RESULTS:
+                event['results'] = True
+                event.object.object.message.payload = GAME_MENU
+                event['payload'] = GAME_MENU
 
-                    del (storage[event['conversation_id']])
-                    event['results'] = 'Special'
+            # end
+            elif event['payload'] == END:
+                conversation_id = event['conversation_id']
+                session = await Session.query.where(Session.conversation_id == conversation_id).gino.first()
 
-                ######################### answer was given ############################
-                elif match('\[club202343491\|bot]', event['user_text']):
-                    event.object.object.message.payload = '{"command":"game_menu"}'
-                    event['payload'] = '{"command":"game_menu"}'
+                score = json.dumps(self.storage[event['conversation_id']]['participants'])
+                await session.update(conversation_id=event['conversation_id'],
+                                     players_score=score,
+                                     status='finished').apply()
 
-                elif match(r'!r', event['user_text']):
-                    event.object.object.message.payload = '{"command":"menu"}'
-                    event['payload'] = '{"command":"menu"}'
+                del (self.storage[event['conversation_id']])
 
-            except:
-                pass
-            finally:
-                return MiddlewareResult(True)
+                event['results'] = session
+                event.object.object.message.payload = MENU
+                event['payload'] = MENU
 
-    return RoutingMiddleware()
+            # reset (development tool)
+            elif match(r'!r', event['user_text']):
+                event.object.object.message.payload = MENU
+                event['payload'] = MENU
+
+            # answer was given
+            elif (self.storage[event['conversation_id']]['caller'] is not None) and (event['payload'] != TIME):
+                event.object.object.message.payload = GAME_MENU
+                event['payload'] = GAME_MENU
+
+        finally:
+            return MiddlewareResult(True)
