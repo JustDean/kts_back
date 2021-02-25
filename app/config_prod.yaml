@@ -1,0 +1,7 @@
+base:
+  port: $PORT
+vk:
+  token: $VK_TOKEN
+  group_id: $GROUP_ID
+postgres:
+  db_url: $DATABASE_URL
