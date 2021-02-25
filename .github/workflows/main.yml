@@ -5,6 +5,7 @@ on:
   push:
     branches: [ dev ]
 
+
 jobs:
   builds:
     runs-on: ubuntu-latest
@@ -12,14 +13,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
       - name: Heroku deploy
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
