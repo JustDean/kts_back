@@ -123,8 +123,8 @@ class Game(BaseMiddleware):
                     # not a chooser called
                     else:
                         event['turn_violation'] = True
-                        event.object.object.message.payload = MENU
-                        event['payload'] = MENU
+                        event.object.object.message.payload = GAME_MENU
+                        event['payload'] = GAME_MENU
 
                         return MiddlewareResult(True)
 
